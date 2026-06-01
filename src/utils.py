@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd 
 import dill
 from sklearn.metrics import r2_score
-
+from sklearn.model_selection import GridSearchCV
 
 from sklearn.model_selection import train_test_split
 
@@ -26,24 +26,44 @@ def save_object(file_path, obj):
     raise CustomException(e, sys)
 
 
-def evaluate_models(X_train, y_train, X_test,y_test,models):
-   try:
-      report = {}
+def evaluate_models(X_train, y_train, X_test, y_test, models, param):
+    try:
+        report = {}
 
-      for i in range(len(list(models))):
-         model = list(models.values())[i]
+        for i in range(len(list(models))):
 
-         model.fit(X_train,y_train) #training model
+            model = list(models.values())[i]
 
-         y_train_pred = model.predict(X_train)
-         y_test_pred = model.predict(X_test)
+            para = param[list(models.keys())[i]]
 
-         train_model_score = r2_score(y_train,y_train_pred)
-         test_model_score = r2_score(y_test,y_test_pred)
+            gs = GridSearchCV(
+                estimator=model,
+                param_grid=para,
+                cv=3
+            )
 
-         report[list(models.keys())[i]]= test_model_score
+            gs.fit(X_train, y_train)
 
-      return report
+            model.set_params(**gs.best_params_)
 
-   except Exception as e:
-      raise CustomException(e,sys)
+            model.fit(X_train, y_train)
+
+            y_train_pred = model.predict(X_train)
+            y_test_pred = model.predict(X_test)
+
+            train_model_score = r2_score(
+                y_train,
+                y_train_pred
+            )
+
+            test_model_score = r2_score(
+                y_test,
+                y_test_pred
+            )
+
+            report[list(models.keys())[i]] = test_model_score
+
+        return report
+
+    except Exception as e:
+        raise CustomException(e, sys)

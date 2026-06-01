@@ -20,7 +20,6 @@ from src.utils import save_object
 from src.utils import evaluate_models
 
 
-# Creating config file for path allocation
 @dataclass
 class ModelTrainerConfig:
     trained_model_file_path: str = os.path.join(
@@ -33,7 +32,11 @@ class ModelTrainer:
     def __init__(self):
         self.model_trainer_config = ModelTrainerConfig()
 
-    def initiate_model_trainer(self, train_array, test_array):
+    def initiate_model_trainer(
+        self,
+        train_array,
+        test_array
+    ):
         try:
             logging.info(
                 "Splitting training and test input data"
@@ -46,40 +49,156 @@ class ModelTrainer:
             y_test = test_array[:, -1]
 
             models = {
-                "Random Forest": RandomForestRegressor(),
-                "Decision Tree": DecisionTreeRegressor(),
-                "Gradient Boosting": GradientBoostingRegressor(),
-                "Linear Regression": LinearRegression(),
-                "K-Neighbors Regressor": KNeighborsRegressor(),
-                "XGBRegressor": XGBRegressor(),
-                "CatBoost Regressor": CatBoostRegressor(
+
+                "Random Forest":
+                RandomForestRegressor(),
+
+                "Decision Tree":
+                DecisionTreeRegressor(),
+
+                "Gradient Boosting":
+                GradientBoostingRegressor(),
+
+                "Linear Regression":
+                LinearRegression(),
+
+                "K-Neighbors Regressor":
+                KNeighborsRegressor(),
+
+                "XGBRegressor":
+                XGBRegressor(),
+
+                "CatBoost Regressor":
+                CatBoostRegressor(
                     verbose=False
                 ),
-                "AdaBoost Regressor": AdaBoostRegressor()
+
+                "AdaBoost Regressor":
+                AdaBoostRegressor()
             }
 
-            model_report: dict = evaluate_models(
+            params = {
+
+                "Decision Tree": {
+                    "criterion": [
+                        "squared_error",
+                        "friedman_mse",
+                        "absolute_error",
+                        "poisson"
+                    ]
+                },
+
+                "Random Forest": {
+                    "n_estimators": [
+                        8, 16, 32,
+                        64, 128, 256
+                    ]
+                },
+
+                "Gradient Boosting": {
+                    "learning_rate": [
+                        0.1,
+                        0.01,
+                        0.05,
+                        0.001
+                    ],
+                    "subsample": [
+                        0.6,
+                        0.7,
+                        0.75,
+                        0.8,
+                        0.85,
+                        0.9
+                    ],
+                    "n_estimators": [
+                        8, 16, 32,
+                        64, 128, 256
+                    ]
+                },
+
+                "Linear Regression": {},
+
+                "K-Neighbors Regressor": {
+                    "n_neighbors": [
+                        5,
+                        7,
+                        9,
+                        11
+                    ]
+                },
+
+                "XGBRegressor": {
+                    "learning_rate": [
+                        0.1,
+                        0.01,
+                        0.05,
+                        0.001
+                    ],
+                    "n_estimators": [
+                        8, 16, 32,
+                        64, 128, 256
+                    ]
+                },
+
+                "CatBoost Regressor": {
+                    "depth": [
+                        6,
+                        8,
+                        10
+                    ],
+                    "learning_rate": [
+                        0.01,
+                        0.05,
+                        0.1
+                    ],
+                    "iterations": [
+                        30,
+                        50,
+                        100
+                    ]
+                },
+
+                "AdaBoost Regressor": {
+                    "learning_rate": [
+                        0.1,
+                        0.01,
+                        0.5,
+                        0.001
+                    ],
+                    "n_estimators": [
+                        8,
+                        16,
+                        32,
+                        64,
+                        128,
+                        256
+                    ]
+                }
+            }
+
+            model_report = evaluate_models(
                 X_train=X_train,
                 y_train=y_train,
                 X_test=X_test,
                 y_test=y_test,
-                models=models
+                models=models,
+                param=params
             )
 
             logging.info(
-                f"Model Report : {model_report}"
+                f"Model Report: {model_report}"
             )
 
-            # Get best model score
             best_model_score = max(
                 model_report.values()
             )
 
-            # Get best model name
             best_model_name = list(
                 model_report.keys()
             )[
-                list(model_report.values()).index(
+                list(
+                    model_report.values()
+                ).index(
                     best_model_score
                 )
             ]
@@ -98,7 +217,6 @@ class ModelTrainer:
                 f"Best Model Found: {best_model_name}"
             )
 
-            # Train best model on full training data
             best_model.fit(
                 X_train,
                 y_train
@@ -109,7 +227,6 @@ class ModelTrainer:
                 obj=best_model
             )
 
-            # Prediction
             predicted = best_model.predict(
                 X_test
             )
