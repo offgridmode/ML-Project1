@@ -1,12 +1,10 @@
-## this file is used to train test split and transform data set read from data ingestion file
-## helps prepare the data according to the model
-
 import sys
 from dataclasses import dataclass
+import os
 
 import numpy as np
 import pandas as pd
-import seaborn as sns
+
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
@@ -14,7 +12,6 @@ from sklearn.preprocessing import OneHotEncoder, StandardScaler
 
 from src.exception import CustomException
 from src.logger import logging
-import os
 from src.utils import save_object
 
 
@@ -32,9 +29,6 @@ class DataTransformation:
         self.data_transformation_config = DataTransformationConfig()
 
     def get_data_transformer_object(self):
-        '''
-        This function is responsible for data transformation
-        '''
 
         try:
 
@@ -61,17 +55,9 @@ class DataTransformation:
             cat_pipeline = Pipeline(
                 steps=[
                     ("imputer", SimpleImputer(strategy="most_frequent")),
-                    ("one_hot_encoder", OneHotEncoder()),
+                    ("one_hot_encoder", OneHotEncoder(handle_unknown="ignore")),
                     ("scaler", StandardScaler(with_mean=False))
                 ]
-            )
-
-            logging.info(
-                f"Categorical Columns: {categorical_columns}"
-            )
-
-            logging.info(
-                f"Numerical Columns: {numerical_columns}"
             )
 
             preprocessor = ColumnTransformer(
@@ -109,10 +95,6 @@ class DataTransformation:
                 "Read train and test data completed"
             )
 
-            logging.info(
-                "Obtaining preprocessing object"
-            )
-
             preprocessing_obj = (
                 self.get_data_transformer_object()
             )
@@ -120,24 +102,18 @@ class DataTransformation:
             target_columns_name = "math score"
 
             input_feature_train_df = train_df.drop(
-                columns=[target_columns_name]
+                columns=[target_columns_name],
+                axis=1
             )
 
-            target_feature_train_df = train_df[
-                target_columns_name
-            ]
+            target_feature_train_df = train_df[target_columns_name]
 
             input_feature_test_df = test_df.drop(
-                columns=[target_columns_name]
+                columns=[target_columns_name],
+                axis=1
             )
 
-            target_feature_test_df = test_df[
-                target_columns_name
-            ]
-
-            logging.info(
-                "Applying preprocessing object on training dataframe and testing dataframe"
-            )
+            target_feature_test_df = test_df[target_columns_name]
 
             input_feature_train_arr = (
                 preprocessing_obj.fit_transform(
@@ -160,10 +136,6 @@ class DataTransformation:
                 input_feature_test_arr,
                 np.array(target_feature_test_df)
             ]
-
-            logging.info(
-                "Saved preprocessing object"
-            )
 
             save_object(
                 file_path=self.data_transformation_config.preprocessor_obj_file_path,
